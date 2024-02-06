@@ -1,0 +1,317 @@
+---
+title: |
+ ![](C:/Users/jmoodie/OneDrive - University of Edinburgh/Work for other people/Hannah Smith/LBC1921 logo.jpg){width=12.5%} ![](C:/Users/jmoodie/OneDrive - University of Edinburgh/Work for other people/Hannah Smith/LBC1936 logo.jpg){width=20%} <br>  <br>
+ Lothian Birth Cohorts longitudinal *g* models
+author: "Joanna Moodie, Hannah Smith, and Simon Cox"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+    code_folding: hide
+    theme: spacelab
+header-includes:
+    - \usepackage{setspace}
+    - \doublespacing
+
+---
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy('')
+```
+
+
+
+
+$$\\[0.1in]$$
+
+
+For further details about the Lothian Birth Cohorts, please click [here](https://www.ed.ac.uk/lothian-birth-cohorts) and for information about data access, click [here](https://www.ed.ac.uk/lothian-birth-cohorts/data-access-collaboration).
+
+Please contact joanna.moodie@ed.ac.uk or simon.cox@ed.ac.uk if you have any questions about these models.
+
+
+$$\\[0.1in]$$
+
+# LBC1921 single-order *g* model
+
+The LBC1921 holds 5 waves of cognitive data, with participants tested at approximately 79, 82, 86, 90 and 92 years old. Data are available for all 5 waves for verbal fluency, logical memory, and Ravens matrices tests. For the National Adult Reading Test (NART), data are only available from waves 1-4. The latent slopes of NART and Ravens matrices tests had negative variances, and so they were set to 0. *Figure 1* illustrates the model structure. 
+
+
+
+***
+  ```{r, eval = F, class.source='klippy'}
+library(lavaan)
+
+df <- read.csv("")
+
+# recode missing values
+df[df == -999] <- NA 
+df[df == -777] <- NA
+df[df == 999] <- NA
+
+
+
+#==================================================================
+# LBC1921 factor of curves model
+#==================================================================
+model <- '
+# test growth curves
+Ivftot =~ 1*vftot79 + 1*vftot83 + 1*vtotal87 + 1*vftotal_w4 + 1*vftot_w5
+Svftot =~ 0*vftot79 + 4.3*vftot83 + 7.5*vtotal87 + 11*vftotal_w4 + 13*vftot_w5
+
+Inart =~ 1*nart79 + 1*nart83 + 1*nart87 + 1*nart_w4
+Snart =~ 0*nart79 + 4.3*nart83 + 7.5*nart87 + 11*nart_w4 
+
+Ilogmem =~ 1*logmem79 + 1*logtot83 + 1*logtot87 + 1*logmem_w4 + 1*logmem_w5
+Slogmem =~ 0*logmem79 + 4.3*logtot83 + 7.5*logtot87 + 11*logmem_w4 + 13*logmem_w5
+
+Iravens =~ 1*ravens79 + 1*ravens83 + 1*ravens87 + 1*ravens_w4 + 1*ravens_w5
+Sravens =~ 0*ravens79 + 4.3*ravens83 + 7.5*ravens87 + 11*ravens_w4 + 13*ravens_w5
+
+# latent *g* intercept and slope
+Ig =~ Ivftot + Ilogmem + Inart + Iravens
+Sg =~ Svftot + Slogmem + Snart + Sravens
+
+# indicator as scaling reference: loading=1, int=0
+Ivftot ~ 0*1
+Svftot ~ 0*1 
+
+# within-test intercept-slope covariances
+Ivftot ~~Svftot
+Ilogmem ~~ Slogmem
+#Inart ~~ Snart
+#Iravens ~~ Sravens
+
+# fix negative residual covariances to 0 
+Snart~~0*Snart
+Sravens ~~ 0*Sravens
+'
+
+fit <- growth(model = model, df,  missing = "ml.x", em.h1.iter.max = 800)
+summary(fit, fit.measures=T, standardized = T)
+#write.table(standardizedSolution(fit), 'filename.csv', sep = ",", row.names = F)
+
+  ```  
+
+  
+  
+<center>
+![*Figure 1* LBC1921 *g* level and change model simplified path diagram. Within-test intercept-slope covariances, and the *g* intercept-slope covariance, are also included in the model structure.](C:/Users/jmoodie/OneDrive - University of Edinburgh/Work for other people/Hannah Smith/path_LBC1921.jpg){width=65%}
+<center>
+
+
+
+
+
+
+$$\\[0.1in]$$
+
+
+
+# LBC1936 single-order *g* model
+There are currently 5 waves of cognitive test data available for the LBC1936, with participants tested at approximately 70, 73, 76, 79 and 82 years old. Data are available for all cognitive tests at all waves. 
+
+The LBC team have previously provided scripts for a hierarchical *g* level and change model in the LBC1936 (see [Modelling cognitive ability level and change in the LBC1936](https://www.ed.ac.uk/sites/default/files/atoms/files/modelling_cognitive_ability_level_and_change_in_the_lbc1936.pdf), [R code for factor-of-curves model](https://www.ed.ac.uk/sites/default/files/atoms/files/r_factor_of_curves_g_txt.txt), and *Figure 3* of the current document). In those models, the curves are first calculated for the thirteen cognitive tests, which load on 4 cognitive domains (visuospatial ability, crystalised ability, verbal memory, and processing speed) and then on *g*.
+
+Here, the same theoretical approach has been taken but, as it is a single-order model, within-domain covariances are included, instead of calculating latent domains. The National Adult Reading Test (NART) and Weschler Test of Adult Reading (WTAR) are similar tests, and correlate at *r* > .9 across waves. Therefore, within-wave covariances are added between these two tests (w1 ~~ w1, w2 ~~ w2 etc.). The latent slope of spatial span had a negative residual variance, and so was set to 0. *Figure 2* summarises the model structure. 
+
+***
+  
+  ```{r, eval = F, class.source='klippy'}
+library(dplyr)
+library(lavaan)
+
+df <- read.csv("")
+
+# recode missing values
+df[df == -999] <- NA 
+df[df == -777] <- NA
+df[df == 999] <- NA
+
+for (i in names(df)[grep("symsear", names(df))]) { # remove outliers in symsear 
+  df[which(df[,i] < 0),i] <- NA
+}
+
+# first, rescale some of the cognitive test variables so that variances are within a similar range see http://www.statmodel.com/discussion/messages/11/1615.html?1335376547
+df_mod <- dplyr::mutate(df,
+                 blkdes_w1 = blkdes_w1/2,
+                 blkdes_w2 = blkdes_w2/2,
+                 blkdes_w3 = blkdes_w3/2,
+                 blkdes_w4 = blkdes_w4/2,
+                 blkdes_w5 = blkdes_w5/2,
+                 vftot_w1 = vftot_w1/2,
+                 vftot_w2 = vftot_w2/2,
+                 vftot_w3 = vftot_w3/2,
+                 vftot_w4 = vftot_w4/2,
+                 vftot_w5 = vftot_w5/2,
+                 lmtotal_w1 = lmtotal_w1/3,
+                 lmtotal_w2 = lmtotal_w2/3,
+                 lmtotal_w3 = lmtotal_w3/3,
+                 lmtotal_w4 = lmtotal_w4/3,
+                 lmtotal_w5 = lmtotal_w5/3,
+                 digback_w1 = 3*digback_w1,
+                 digback_w2 = 3*digback_w2,
+                 digback_w3 = 3*digback_w3,
+                 digback_w4 = 3*digback_w4,
+                 digback_w5 = 3*digback_w5,
+                 digsym_w1 = digsym_w1/2,
+                 digsym_w2 = digsym_w2/2,
+                 digsym_w3 = digsym_w3/2,
+                 digsym_w4 = digsym_w4/2,
+                 digsym_w5 = digsym_w5/2,
+                 ittotal_w1 = ittotal_w1/2,
+                 ittotal_w2 = ittotal_w2/2,
+                 ittotal_w3 = ittotal_w3/2,
+                 ittotal_w4 = ittotal_w4/2,
+                 ittotal_w5 = ittotal_w5/2,
+                 crtmean_w1 = -50 * crtmean_w1,
+                 crtmean_w2 = -50 * crtmean_w2,
+                 crtmean_w3 = -50 * crtmean_w3,
+                 crtmean_w4 = -50 * crtmean_w4,
+                 crtmean_w5 = -50 * crtmean_w5)
+
+#==================================================================
+# LBC1936 single order factor of curves model
+#==================================================================
+model <- '
+# test growth curves
+Imatreas =~ 1*matreas_w1 + 1*matreas_w2 + 1*matreas_w3 + 1*matreas_w4 + 1*matreas_w5
+Smatreas =~ 0*matreas_w1 + 2.98*matreas_w2 + 6.75*matreas_w3 + 9.82*matreas_w4 + 12.54*matreas_w5
+
+Iblkdes =~ 1*blkdes_w1 + 1*blkdes_w2 + 1*blkdes_w3 + 1*blkdes_w4 + 1*blkdes_w5
+Sblkdes=~ 0*blkdes_w1 + 2.98*blkdes_w2 + 6.75*blkdes_w3 + 9.82*blkdes_w4 + 12.54*blkdes_w5
+
+Ispantot =~ 1*spantot_w1 + 1*spantot_w2 + 1*spantot_w3 + 1*spantot_w4 + 1*spantot_w5
+Sspantot=~ 0*spantot_w1 + 2.98*spantot_w2 + 6.75*spantot_w3 + 9.82*spantot_w4 + 12.54*spantot_w5
+
+Inart =~ 1*nart_w1 + 1*nart_w2 + 1*nart_total_w3 + 1*nart_total_w4 + 1*nart_total_w5
+Snart =~ 0*nart_w1 + 2.98*nart_w2 + 6.75*nart_total_w3 + 9.82*nart_total_w4 + 12.54*nart_total_w5
+
+Iwtar =~ 1*wtar_w1 + 1*wtar_w2 + 1*wtar_total_w3 + 1*wtar_total_w4 + 1*wtar_total_w5
+Swtar =~ 0*wtar_w1 + 2.98*wtar_w2 + 6.75*wtar_total_w3 + 9.82*wtar_total_w4 + 12.54*wtar_total_w5
+
+Ivftot =~ 1*vftot_w1 + 1*vftot_w2 + 1*vftot_w3 + 1*vftot_w4 + 1*vftot_w5
+Svftot =~ 0*vftot_w1 + 2.98*vftot_w2 + 6.75*vftot_w3 + 9.82*vftot_w4 + 12.54*vftot_w5
+
+Ivpatotal =~ 1*vpatotal_w1 + 1*vpatotal_w2 + 1*vpatotal_w3 + 1*vpatotal_w4 + 1*vpa_total_w5
+Svpatotal =~ 0*vpatotal_w1 + 2.98*vpatotal_w2 + 6.75*vpatotal_w3 + 9.82*vpatotal_w4 + 12.54*vpa_total_w5
+
+Ilmtotal =~ 1*lmtotal_w1 + 1*lmtotal_w2 + 1*lmtotal_w3 + 1*lmtotal_w4 + 1*lmtotal_w5
+Slmtotal =~ 0*lmtotal_w1 + 2.98*lmtotal_w2 + 6.75*lmtotal_w3 + 9.82*lmtotal_w4 + 12.54*lmtotal_w5
+
+Idigback =~ 1*digback_w1 + 1*digback_w2 + 1*digback_w3 + 1*digback_w4 + 1*digback_w5
+Sdigback =~ 0*digback_w1 + 2.98*digback_w2 + 6.75*digback_w3 + 9.82*digback_w4 + 12.54*digback_w5
+
+Isymsear =~ 1*symsear_w1 + 1*symsear_w2 + 1*symsear_w3 + 1*symsear_w4 + 1*symsear_w5
+Ssymsear =~ 0*symsear_w1 + 2.98*symsear_w2 + 6.75*symsear_w3 + 9.82*symsear_w4 + 12.54*symsear_w5
+
+Idigsym =~ 1*digsym_w1 + 1*digsym_w2 + 1*digsym_w3 + 1*digsym_w4 + 1*digsym_w5
+Sdigsym =~ 0*digsym_w1 + 2.98*digsym_w2 + 6.75*digsym_w3 + 9.82*digsym_w4 + 12.54*digsym_w5
+
+Iittotal =~ 1*ittotal_w1 + 1*ittotal_w2 + 1*ittotal_w3 + 1*ittotal_w4 + 1*ittotal_w5
+Sittotal =~ 0*ittotal_w1 + 2.98*ittotal_w2 + 6.75*ittotal_w3 + 9.82*ittotal_w4 + 12.54*ittotal_w5
+
+Icrtmean =~ 1*crtmean_w1 + 1*crtmean_w2 + 1*crtmean_w3 + 1*crtmean_w4 + 1*crtmean_w5
+Scrtmean =~ 0*crtmean_w1 + 2.98*crtmean_w2 + 6.75*crtmean_w3 + 9.82*crtmean_w4 + 12.54*crtmean_w5
+
+# latent *g* intercept and slope 
+Ig =~ Imatreas + Iblkdes + Ispantot + Inart + Iwtar + Ivftot + Ivpatotal + Ilmtotal +
+  Idigback + Isymsear + Idigsym  + Iittotal + Icrtmean 
+Sg =~ Sblkdes + Smatreas + Sspantot + Snart + Swtar  + Svftot + Svpatotal + Slmtotal +
+  Sdigback + Ssymsear + Sdigsym  + Sittotal + Scrtmean 
+
+#indicator as scaling reference: loading=1, int=0
+Iblkdes ~ 0*1
+Sblkdes ~ 0*1 
+
+# within-wave covariances between nart and wtar
+nart_w1 ~~ wtar_w1
+nart_w2 ~~ wtar_w2
+nart_total_w3 ~~ wtar_total_w3
+nart_total_w4 ~~ wtar_total_w4
+nart_total_w5 ~~ wtar_total_w5
+
+# within-test intercept-slope covariances
+Imatreas ~~ Smatreas
+Iblkdes ~~ Sblkdes
+#Ispantot ~~Sspantot
+Inart ~~ Snart
+Iwtar ~~ Swtar
+Ivftot ~~ Svftot
+Ivpatotal ~~ Svpatotal
+Ilmtotal ~~ Slmtotal
+Idigback ~~ Sdigback
+Isymsear ~~ Ssymsear
+Idigsym ~~ Sdigsym
+Iittotal ~~ Sittotal
+Icrtmean ~~ Scrtmean
+
+# within-domain intercept-intercept and slope-slope covariances
+Iblkdes ~~ Imatreas # Visuospatial domain
+Iblkdes ~~ Ispantot
+Imatreas ~~ Ispantot
+Sblkdes ~~ Smatreas 
+#Sblkdes ~~ Sspantot
+#Smatreas ~~ Sspantot
+
+Inart ~~ Ivftot #Crystalized domain
+Iwtar ~~ Ivftot
+Iwtar ~~ Inart
+Snart ~~ Svftot
+Swtar ~~ Svftot
+Swtar ~~ Snart
+
+Ilmtotal ~~ Ivpatotal # Verbal memory domain
+Ilmtotal ~~ Idigback
+Ivpatotal ~~ Idigback
+Slmtotal ~~ Svpatotal
+Slmtotal ~~ Sdigback
+Svpatotal ~~ Sdigback
+
+Iittotal ~~ Idigsym #Processing speed domain
+Iittotal ~~ Isymsear
+Iittotal ~~ Icrtmean
+Idigsym ~~ Isymsear
+Idigsym ~~ Icrtmean
+Isymsear ~~ Icrtmean
+Sittotal ~~ Sdigsym 
+Sittotal ~~ Ssymsear
+Sittotal ~~ Scrtmean
+Sdigsym ~~ Ssymsear
+Sdigsym ~~ Scrtmean
+Ssymsear ~~ Scrtmean
+
+#fixed negative residual variance to 0 
+Sspantot ~~ 0*Sspantot
+'
+
+fit <- growth(model = model, df_mod,  missing = "ml.x")
+summary(fit, fit.measures = T, standardized = T)
+#write.table(standardizedSolution(fit), 'filename.csv', sep = ",", row.names = F)
+
+  ```
+
+<center>
+![*Figure 2* Single-order LBC1936 *g* level and change model simplified path diagram. Within-test intercept-slope covariances, and the *g* intercept-slope covariance, are also included in the model structure.](C:/Users/jmoodie/OneDrive - University of Edinburgh/Work for other people/Hannah Smith/path_LBC1936_singleorder.jpg)
+<center>
+
+
+
+$$\\[0.1in]$$
+
+
+# LBC1936 hierarchical *g* model
+See [Modelling cognitive ability level and change in the LBC1936](https://www.ed.ac.uk/sites/default/files/atoms/files/modelling_cognitive_ability_level_and_change_in_the_lbc1936.pdf) and the [R code for factor-of-curves model](https://www.ed.ac.uk/sites/default/files/atoms/files/r_factor_of_curves_g_txt.txt) for details and R code. 
+
+***
+  
+  ```{r, eval = F}
+  ```
+  
+<center>
+![*Figure 3* Hierarchical LBC1936 *g* level and change model simplified path diagram. Within-test/domain/*g* intercept-slope covariances are also included in the model structure.](C:/Users/jmoodie/OneDrive - University of Edinburgh/Work for other people/Hannah Smith/path_LBC1936_hierarchical.jpg)
+
+<center>
+
